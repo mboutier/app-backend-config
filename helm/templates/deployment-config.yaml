@@ -1,0 +1,51 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{ include "application.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ .Values.name }}
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+        - name: {{ .Values.name }}
+          image: {{ .Values.dockerImage.repository }}:{{ .Values.dockerImage.version }}
+          ports:
+            - containerPort: 8080
+          env:
+            {{- toYaml .Values.envVariables | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          imagePullPolicy: Always
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          volumeMounts:
+            - name: {{ include "app.config" . }}
+              mountPath: /app/config
+              readOnly: true
+      imagePullSecrets:
+        - name: secret
+      volumes:
+        - name: {{ include "app.config" . }}
+          configMap:
+            name: {{ include "app.config" . }}
+            items:
+              - key: application.yaml
+                path: application.yaml
+        - name: secret
+          secret:
+            secretName: secret

@@ -1,0 +1,18 @@
+### Default values
+
+name: backend
+env: --youHaveToRewriteViaEnvValuesFile--
+namespace: --youHaveToRewriteViaEnvValuesFile--
+replicas: 1
+revisionHistoryLimit: 5
+
+resources:
+  limits:
+    cpu: 2
+    memory: 2Gi
+  requests:
+    cpu: 1
+    memory: 1Gi
+
+
+

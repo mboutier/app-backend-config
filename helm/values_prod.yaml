@@ -1,0 +1,7 @@
+### Default values for PROD enviroment
+
+env: prod
+namespace: company-prod
+replicas: 1
+revisionHistoryLimit: 5
+

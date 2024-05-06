@@ -1,0 +1,7 @@
+### Default values for UAT enviroment
+
+env: uat
+namespace: company-uat
+replicas: 1
+revisionHistoryLimit: 5
+

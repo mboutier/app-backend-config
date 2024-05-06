@@ -1,0 +1,19 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ .Values.name }}-2
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{ include "application.labels" . | nindent 4 }}
+  annotations:
+    haproxy.router.openshift.io/timeout: 120s
+spec:
+  host: {{ include "host2" . }}
+  to:
+    kind: Service
+    name: {{ .Values.name }}
+    weight: 100
+  port:
+    targetPort: 8080
+  wildcardPolicy: None
+

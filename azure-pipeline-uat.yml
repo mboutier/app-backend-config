@@ -1,0 +1,70 @@
+# UAT RELEASE PIPELINE
+name: image-id_${{ parameters.version }}_$(Date:yyyyMMdd).$(Rev:r)
+
+trigger: none
+
+parameters:
+  - name: version
+    displayName: Version (commit hash) to be deployed to UAT
+    type: string
+
+variables:
+  - name: agent
+    value: agent1
+  - name: aroServiceConnection
+    value: ADO-Service-Connection
+  - name: imageRepository
+    value: 'app/backend'
+  - name: helmValuesFile
+    value: 'values_test.yaml'
+  - name: helmNamespace
+    value: 'app-uat'
+  - name: helmRelease
+    value: backend
+
+stages:
+  - stage: Deploy
+    displayName: 'Deploy To UAT'
+    jobs:
+      - deployment:
+        pool:
+          name: company Pipelines
+          demands:
+            - agent.name -equals $(agent)
+        environment: 'UAT'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: AzureCLI@2
+                  displayName: 'Check container image'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az acr repository show --name $(REGISTRY_NAME) --image $(imageRepository):${{ parameters.version }}
+                - task: oc-setup@2
+                  displayName: Connect With OpenShift
+                  inputs:
+                    connectionType: 'OpenShift Connection Service'
+                    openshiftService: $(aroServiceConnection)
+                - task: Bash@3
+                  displayName: Helm template
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      echo 'Build.SourceVersion: $(Build.SourceVersion)'
+                      echo 'parameters.version: ${{ parameters.version }}'
+                      cd helm
+                      helm template --values $(helmValuesFile) $(helmRelease) . --namespace $(helmNamespace)  --set-string dockerImage.version=${{ parameters.version }}
+                - task: Bash@3
+                  displayName: Helm upgrade
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      echo 'Build.SourceVersion: $(Build.SourceVersion)'
+                      echo 'parameters.version: ${{ parameters.version }}'
+                      cd helm
+                      helm upgrade --install --values $(helmValuesFile) $(helmRelease) . --namespace $(helmNamespace)  --set-string dockerImage.version=${{ parameters.version }}
